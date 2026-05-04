@@ -660,6 +660,14 @@ label {
 
 /* ====== PRINT STYLES ====== */
 @media print {
+  @page {
+    margin: 0;
+  }
+
+  body {
+    margin: 1cm;
+  }
+
   /* Hide all app UI */
   #authView, #appShell, .fab, .qr-print-area, .qr-label-print-area {
     display: none !important;
@@ -708,24 +716,24 @@ label {
     height: 7cm;
     border: 1px dashed #999;
     text-align: center;
-    padding: 0.2cm;
+    padding: 0.3cm;
     box-sizing: border-box;
     font-family: Arial, sans-serif;
     page-break-inside: avoid;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
   }
 
   body.print-labels .label-name {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: bold;
-    margin-bottom: 0.2cm;
+    margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 6cm;
+    max-width: 5.9cm;
   }
 
   body.print-labels .qr-img {

@@ -309,7 +309,20 @@ async function printSelectedLabels() {
     return;
   }
 
+  // Handle Duplicates and Data Consistency (FIX 4)
+  const uniqueStudents = [];
+  const seenIds = new Set();
   const selected = state.students.filter(s => selectedStudents.includes(s.id));
+  
+  selected.forEach(s => {
+    if (seenIds.has(s.id)) {
+      console.warn(`Duplicate student found: ${s.name} (ID: ${s.id}). Skipping to avoid duplicate labels.`);
+    } else {
+      seenIds.add(s.id);
+      uniqueStudents.push(s);
+    }
+  });
+
   const grid = document.getElementById("labelGrid");
   grid.innerHTML = "";
 
@@ -318,22 +331,23 @@ async function printSelectedLabels() {
   tempContainer.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0;";
   document.body.appendChild(tempContainer);
 
-  for (const student of selected) {
+  for (const student of uniqueStudents) {
     const qrDiv = document.createElement("div");
     tempContainer.appendChild(qrDiv);
     new QRCode(qrDiv, { text: student.id, width: 256, height: 256 });
   }
 
-  // Wait for all QR codes to render
-  await new Promise(resolve => setTimeout(resolve, 600));
+  // Wait for all QR codes to render (Increased delay for reliability)
+  await new Promise(resolve => setTimeout(resolve, 800));
 
   // Extract data URLs and build label grid
-  selected.forEach((student, i) => {
+  uniqueStudents.forEach((student, i) => {
     const qrDiv = tempContainer.children[i];
     const canvas = qrDiv.querySelector("canvas");
     const dataUrl = canvas ? canvas.toDataURL() : "";
 
-    const nameText = student.name.length > 22 ? student.name.substring(0, 20) + "..." : student.name;
+    // Fix 1: Add Student Name & Truncate long names
+    const nameText = student.name.length > 25 ? student.name.substring(0, 22) + "..." : student.name;
 
     const label = document.createElement("div");
     label.className = "label";
