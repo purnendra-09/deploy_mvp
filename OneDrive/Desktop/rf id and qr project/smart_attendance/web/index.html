@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1E293B" />
+  <meta name="description" content="Smart Attendance System — QR-based attendance tracking for teachers." />
+  <title>Smart Attendance System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Lucide Icons (REQ 9) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <!-- QR Code Generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- ==================== AUTH VIEW ==================== -->
+  <div id="authView" class="auth-view active">
+    <div class="auth-box panel">
+      <div style="text-align:center; margin-bottom: 20px;">
+        <div class="brand__mark" style="margin: 0 auto 12px; width:52px; height:52px; font-size:18px;">SA</div>
+        <h2 style="margin-bottom:4px;">Smart Attendance</h2>
+        <p class="muted">Sign in or register to continue.</p>
+      </div>
+      <form id="authForm" class="form-grid">
+        <div class="form-grid__full" style="flex-direction:column; align-items:stretch;">
+          <label for="authEmail">Email</label>
+          <input id="authEmail" type="email" placeholder="you@example.com" required />
+        </div>
+        <div class="form-grid__full" style="flex-direction:column; align-items:stretch;">
+          <label for="authPassword">Password</label>
+          <input id="authPassword" type="password" placeholder="••••••••" required />
+        </div>
+        <div class="form-grid__full" style="justify-content: space-between; margin-top: 10px;">
+          <button id="loginBtn" class="button button--primary" type="button">Sign In</button>
+          <button id="registerBtn" class="button button--outline" type="button">Register</button>
+        </div>
+        <div class="form-grid__full">
+          <span id="authResult" class="inline-result"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== APP SHELL ==================== -->
+  <div id="appShell" class="app-shell" style="display: none;">
+
+    <!-- Mobile overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <div class="brand__mark">SA</div>
+        <div>
+          <strong>Smart Attendance</strong>
+          <span>Teacher Portal</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <button class="nav__item active" data-route="dashboard">
+          <span class="nav__icon"><i data-lucide="layout-dashboard"></i></span><span>Dashboard</span>
+        </button>
+        <button class="nav__item" data-route="students">
+          <span class="nav__icon"><i data-lucide="users"></i></span><span>Students</span>
+        </button>
+        <button class="nav__item" data-route="classes">
+          <span class="nav__icon"><i data-lucide="layout-grid"></i></span><span>Classes</span>
+        </button>
+        <button class="nav__item" data-route="scanner">
+          <span class="nav__icon"><i data-lucide="camera"></i></span><span>Scanner</span>
+        </button>
+        <button class="nav__item" data-route="attendance">
+          <span class="nav__icon"><i data-lucide="clipboard-check"></i></span><span>Attendance</span>
+        </button>
+        <button class="nav__item" data-route="profile">
+          <span class="nav__icon"><i data-lucide="user"></i></span><span>Profile</span>
+        </button>
+        <button class="nav__item" data-route="about">
+          <span class="nav__icon"><i data-lucide="info"></i></span><span>About Us</span>
+        </button>
+      </nav>
+
+      <div class="sidebar__foot">
+        <span id="userEmailDisplay" class="status-pill status-pill--live">...</span>
+        <button id="logoutBtn" class="text-button">
+          <i data-lucide="log-out" style="width:16px; height:16px; margin-right:6px;"></i> Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <header class="topbar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageSubtitle">Overview of system activities.</p>
+          </div>
+        </div>
+      </header>
+
+      <!-- ====== DASHBOARD ====== -->
+      <section id="dashboard" class="view active">
+        <div class="metrics">
+          <article class="metric">
+            <span>Total Students</span>
+            <strong id="dashTotalStudents">0</strong>
+          </article>
+          <article class="metric metric--success">
+            <span>Today's Attendance</span>
+            <strong id="dashAttendancePercent">0%</strong>
+          </article>
+        </div>
+        <div class="panel">
+          <div class="panel__head">
+            <h2>Recent Activity Feed</h2>
+          </div>
+          <div id="activityFeedList" class="record-list"></div>
+        </div>
+      </section>
+
+      <!-- ====== STUDENTS ====== -->
+      <section id="students" class="view">
+        <div class="scanner-layout">
+          <form id="addStudentForm" class="panel form-grid">
+            <div class="panel__head form-grid__full">
+              <h2>Add Student</h2>
+            </div>
+            <div class="form-grid__full" style="flex-direction:column; align-items:stretch;">
+              <label>Name</label>
+              <input id="studName" type="text" required />
+            </div>
+            <div>
+              <label>Roll No</label>
+              <input id="studRoll" type="text" required />
+            </div>
+            <div>
+              <label>Class</label>
+              <select id="studClass" required>
+                <option value="">Select Class</option>
+              </select>
+            </div>
+            <div class="form-grid__full">
+              <button class="button button--primary" type="submit">Create Student</button>
+              <span id="studResult" class="inline-result"></span>
+            </div>
+          </form>
+
+          <div class="panel">
+            <div class="panel__head">
+              <h2>Generated QR Code</h2>
+            </div>
+            <div id="qrContainer" style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px;">
+              <p class="muted">Submit form to generate QR</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+          <div class="panel__head">
+            <h2>Student Directory</h2>
+          </div>
+          <div id="studentSelectToolbar" class="student-select-toolbar">
+            <div class="select-toolbar__left">
+              <label class="checkbox-wrap">
+                <input type="checkbox" id="selectAllStudents" />
+                <span>Select All</span>
+              </label>
+              <span id="selectedCount" class="selected-count"></span>
+            </div>
+            <button id="printSelectedLabelsBtn" class="button button--primary" disabled>
+              <i data-lucide="printer" style="width:16px;height:16px;"></i>
+              Print Selected Labels
+            </button>
+          </div>
+          <div id="studentListContainer" class="record-list"></div>
+        </div>
+      </section>
+
+      <!-- ====== STUDENT DETAIL (REQ 7) ====== -->
+      <section id="studentDetail" class="view">
+        <div style="margin-bottom:16px;">
+          <button id="backToStudents" class="button button--outline" style="gap:6px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back to Students
+          </button>
+        </div>
+        <div class="panel" style="margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+            <div class="avatar" style="width:64px;height:64px;font-size:24px;" id="sdAvatar"></div>
+            <div>
+              <h2 id="sdName" style="margin-bottom:2px;"></h2>
+              <p class="muted" style="margin-bottom:0;" id="sdMeta"></p>
+            </div>
+            <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+              <button id="sdViewQR" class="button button--primary" style="font-size:13px;">View QR</button>
+              <button id="sdPrintQR" class="button button--outline" style="font-size:13px;">Print QR</button>
+              <button id="sdDownloadQR" class="button button--outline" style="font-size:13px;">Download QR</button>
+            </div>
+          </div>
+          <div id="sdQrArea" style="display:none; text-align:center; margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
+            <div id="sdQrDraw"></div>
+          </div>
+        </div>
+        <div class="metrics" style="margin-bottom:20px;">
+          <article class="metric"><span>Total Days</span><strong id="sdTotalDays">0</strong></article>
+          <article class="metric metric--success"><span>Present</span><strong id="sdPresent">0</strong></article>
+          <article class="metric metric--danger"><span>Absent</span><strong id="sdAbsent">0</strong></article>
+          <article class="metric metric--warning"><span>Attendance %</span><strong id="sdPercent">0%</strong></article>
+        </div>
+        <div class="panel">
+          <div class="panel__head"><h2>Attendance History</h2></div>
+          <div id="sdHistoryList" class="record-list"></div>
+        </div>
+      </section>
+
+      <!-- ====== CLASSES ====== -->
+      <section id="classes" class="view">
+        <form id="addClassForm" class="panel form-grid" style="margin-bottom: 20px;">
+          <div class="panel__head form-grid__full">
+            <h2>Create New Class</h2>
+          </div>
+          <div class="form-grid__full" style="flex-direction:column; align-items:stretch;">
+            <label>Class Name</label>
+            <input id="className" type="text" required />
+          </div>
+          <div class="form-grid__full">
+            <button class="button button--primary" type="submit">Add Class</button>
+          </div>
+        </form>
+        <div class="panel">
+          <div class="panel__head">
+            <h2>Class List</h2>
+          </div>
+          <div id="classListContainer" class="record-list"></div>
+        </div>
+      </section>
+
+      <!-- ====== CLASS DETAIL (REQ 10) ====== -->
+      <section id="classDetail" class="view">
+        <div style="margin-bottom:16px;">
+          <button id="backToClasses" class="button button--outline" style="gap:6px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back to Classes
+          </button>
+        </div>
+        <h2 id="cdClassName" style="margin-bottom:16px;"></h2>
+        <div class="metrics" style="margin-bottom:20px;">
+          <article class="metric"><span>Total Students</span><strong id="cdTotal">0</strong></article>
+          <article class="metric metric--success"><span>Present Today</span><strong id="cdPresent">0</strong></article>
+          <article class="metric metric--danger"><span>Absent Today</span><strong id="cdAbsent">0</strong></article>
+          <article class="metric metric--warning"><span>Attendance %</span><strong id="cdPercent">0%</strong></article>
+        </div>
+        <div class="panel">
+          <div class="panel__head"><h2>Students</h2></div>
+          <div id="cdStudentList" class="record-list"></div>
+        </div>
+      </section>
+
+      <!-- ====== QR SCANNER ====== -->
+      <section id="scanner" class="view">
+        <div class="scanner-layout">
+          <div class="scanner-card">
+            <div class="camera-stage">
+              <video id="cameraPreview" playsinline muted></video>
+              <div class="scan-box"></div>
+              <p id="scannerHint">Press Start to begin scanning.</p>
+            </div>
+            <div class="scanner-actions">
+              <button id="startScannerBtn" class="button button--primary">Start Camera</button>
+              <button id="stopScannerBtn" class="button button--outline">Stop</button>
+            </div>
+          </div>
+          <div class="panel form-panel">
+            <h2>QR Scanner Status</h2>
+            <p id="scannerStatusPrompt" class="muted">Point camera at a student QR code to mark attendance.</p>
+            <div id="scannerFeedback" class="inline-result" style="font-size: 18px; margin-top: 20px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== ATTENDANCE ====== -->
+      <section id="attendance" class="view">
+        <div class="panel" style="margin-bottom: 20px;">
+          <div class="toolbar" style="display: flex; gap: 14px; align-items: center; border:none; padding:0; box-shadow:none; margin-bottom:0;">
+            <select id="attendanceClassFilter" style="flex: 1;"><option value="all">All Classes</option></select>
+            <input id="attendanceDateFilter" type="date" style="flex: 1;" />
+            <button id="applyAttFilterBtn" class="button button--primary" style="flex: 0 0 auto;">Apply</button>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 14px; padding-top:14px; border-top: 1px solid var(--line);">
+            <button class="button button--primary" id="sf-all">All</button>
+            <button class="button button--outline" id="sf-present">Present</button>
+            <button class="button button--outline" id="sf-absent">Absent</button>
+          </div>
+        </div>
+        <div class="metrics" style="margin-bottom: 20px;">
+          <article class="metric"><span>Total Students</span><strong id="attTotalStudents">0</strong></article>
+          <article class="metric metric--success"><span>Present</span><strong id="attTotalPresent">0</strong></article>
+          <article class="metric metric--danger"><span>Absent</span><strong id="attTotalAbsent">0</strong></article>
+          <article class="metric metric--warning"><span>Attendance %</span><strong id="attPercent">0%</strong></article>
+        </div>
+        <div class="panel">
+          <div class="panel__head"><h2>Attendance Records</h2></div>
+          <div id="attendanceListContainer" class="record-list"></div>
+        </div>
+      </section>
+
+      <!-- ====== PROFILE (REQ 3) ====== -->
+      <section id="profile" class="view">
+        <div class="panel" style="max-width:600px;">
+          <div style="display:flex; align-items:center; gap:18px; margin-bottom:20px;">
+            <div class="avatar" style="width:64px;height:64px;font-size:24px; background:#2563eb; color:#fff;" id="profileAvatar">T</div>
+            <div>
+              <h2 id="profileName" style="margin-bottom:2px;">Teacher</h2>
+              <p class="muted" style="margin-bottom:0;" id="profileEmail">...</p>
+            </div>
+          </div>
+          <div class="settings-list">
+            <div><strong>Total Students</strong><span id="profileStudents">0</span></div>
+            <div><strong>Total Classes</strong><span id="profileClasses">0</span></div>
+            <div><strong>Overall Attendance</strong><span id="profileAttendance">0%</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== ABOUT US (REQ 8) ====== -->
+      <section id="about" class="view">
+        <div class="panel" style="max-width:700px;">
+          <h2 style="margin-bottom:12px;">About Smart Attendance</h2>
+          <p>Smart Attendance is a modern, QR-based attendance management system designed for teachers. It simplifies student tracking, class organization, and attendance analytics — all within a clean, mobile-friendly interface.</p>
+          <h3 style="margin-top:20px;">Features</h3>
+          <ul style="color:var(--muted); line-height:1.8; padding-left:20px;">
+            <li>QR-based student identification and scanning</li>
+            <li>Real-time attendance tracking with Firestore</li>
+            <li>Class-level and student-level analytics</li>
+            <li>Print-ready QR codes for physical distribution</li>
+            <li>Multi-teacher data isolation (each teacher sees only their data)</li>
+            <li>Mobile-responsive design with hamburger navigation</li>
+          </ul>
+          <h3 style="margin-top:20px;">Team</h3>
+          <div class="record-list" style="margin-top:10px;">
+            <article class="record">
+              <div class="avatar">P</div>
+              <div><strong class="record__name">Purnendra</strong><span class="record__meta">Lead Developer</span></div>
+              <span class="badge badge--present">Active</span>
+            </article>
+          </div>
+          <p class="muted" style="margin-top:20px; font-size:12px;">Version 1.0.0 · Built with Firebase · © 2026</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Scan Button -->
+    <button id="floatingScanBtn" class="fab" onclick="document.querySelector('[data-route=\'scanner\']').click()">
+      <i data-lucide="camera" style="width:24px;height:24px;"></i>
+    </button>
+  </div>
+
+  <!-- ====== QR PRINT AREA (REQ 5) ====== -->
+  <div id="qrPrintArea" class="qr-print-area">
+    <h2 id="printStudentName"></h2>
+    <p id="printStudentMeta"></p>
+    <div id="printQrImage"></div>
+    <p id="printStudentId" style="font-size:12px; color:#6B7280; margin-top:8px;"></p>
+  </div>
+
+  <!-- ====== QR LABEL PRINT AREA ====== -->
+  <div id="qrLabelPrintArea" class="qr-label-print-area">
+    <div id="labelGrid" class="label-grid"></div>
+  </div>
+
+  <!-- Record Template -->
+  <template id="recordTemplate">
+    <article class="record">
+      <div class="avatar"></div>
+      <div>
+        <strong class="record__name"></strong>
+        <span class="record__meta"></span>
+      </div>
+      <span class="badge"></span>
+    </article>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

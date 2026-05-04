@@ -1,0 +1,31 @@
+// storage.rules
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── QR Codes ─────────────────────────────────────────────
+    // Folder structure: qrcodes/{schoolId}/{studentId}.png
+    match /qrcodes/{schoolId}/{studentId}.png {
+      // Student can read their own QR; admins of the same school can read all
+      allow read: if request.auth != null
+        && (
+          request.auth.uid == studentId
+          || (request.auth.token.role    == 'admin'
+            && request.auth.token.schoolId == schoolId)
+        );
+      // Only Cloud Functions (service account) can write QR codes
+      allow write: if false;
+    }
+
+    // ── Future: student profile photos (Stage 2 placeholder) ──
+    match /avatars/{schoolId}/{studentId}.jpg {
+      allow read:  if request.auth != null
+        && request.auth.token.schoolId == schoolId;
+      allow write: if request.auth != null
+        && request.auth.uid == studentId
+        && request.resource.size < 2 * 1024 * 1024  // 2 MB max
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
