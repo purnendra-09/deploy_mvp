@@ -22,6 +22,13 @@ let currentScanTimer = null;
 const state = { students: [], classes: [], attendance: [] };
 const filterState = { status: "all" };
 let selectedStudents = [];
+const qrSettings = {
+  size: 5,
+  darkness: 'standard',
+  showName: true,
+  showClass: true,
+  showRoll: true
+};
 
 // ── Init ──
 document.addEventListener("DOMContentLoaded", () => {
@@ -34,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindScanner();
   bindAttendanceFilters();
   bindLabelPrinting();
+  bindQrConfig();
   document.getElementById("attendanceDateFilter").value = todayStr();
 });
 
@@ -260,7 +268,59 @@ function bindLabelPrinting() {
   document.getElementById("selectAllStudents").addEventListener("change", (e) => {
     toggleSelectAll(e.target.checked);
   });
-  document.getElementById("printSelectedLabelsBtn").addEventListener("click", printSelectedLabels);
+  document.getElementById("printSelectedLabelsBtn").addEventListener("click", openQrConfig);
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// QR CONFIGURATION & PREVIEW
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function bindQrConfig() {
+  const modal = document.getElementById("qrConfigModal");
+  const closeBtn = document.getElementById("closeConfigBtn");
+  const cancelBtn = document.getElementById("cancelPrintBtn");
+  const confirmBtn = document.getElementById("confirmPrintBtn");
+
+  const inputs = {
+    qrSize: document.querySelectorAll('input[name="qrSize"]'),
+    darkness: document.getElementById("qrDarkness")
+  };
+
+  closeBtn.onclick = cancelBtn.onclick = () => modal.classList.remove("active");
+  confirmBtn.onclick = confirmPrint;
+
+  inputs.qrSize.forEach(r => r.onchange = (e) => {
+    qrSettings.size = parseFloat(e.target.value);
+  });
+
+  inputs.darkness.onchange = (e) => { qrSettings.darkness = e.target.value; };
+}
+
+function openQrConfig() {
+  if (selectedStudents.length === 0) return;
+  document.getElementById("qrConfigModal").classList.add("active");
+}
+
+function generateQrImage(text) {
+  return new Promise((resolve) => {
+    const tempDiv = document.createElement("div");
+    new QRCode(tempDiv, {
+      text: text,
+      width: 512, // High resolution output >= 500px
+      height: 512,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: qrSettings.darkness === 'extra' ? QRCode.CorrectLevel.H : QRCode.CorrectLevel.M
+    });
+    
+    // The library renders an img eventually
+    const check = setInterval(() => {
+      const img = tempDiv.querySelector("img");
+      if (img && img.src) {
+        clearInterval(check);
+        resolve(img.src);
+      }
+    }, 50);
+  });
 }
 
 function toggleStudentSelection(studentId, isSelected) {
@@ -303,20 +363,18 @@ function updateSelectionUI() {
   }
 }
 
-async function printSelectedLabels() {
-  if (selectedStudents.length === 0) {
-    alert("Please select at least one student to print labels.");
-    return;
-  }
+async function confirmPrint() {
+  document.getElementById("qrConfigModal").classList.remove("active");
+  
+  if (selectedStudents.length === 0) return;
 
-  // Handle Duplicates and Data Consistency (FIX 4)
   const uniqueStudents = [];
   const seenIds = new Set();
   const selected = state.students.filter(s => selectedStudents.includes(s.id));
   
   selected.forEach(s => {
     if (seenIds.has(s.id)) {
-      console.warn(`Duplicate student found: ${s.name} (ID: ${s.id}). Skipping to avoid duplicate labels.`);
+      console.warn(`Duplicate student: ${s.name} (ID: ${s.id}).`);
     } else {
       seenIds.add(s.id);
       uniqueStudents.push(s);
@@ -324,44 +382,34 @@ async function printSelectedLabels() {
   });
 
   const grid = document.getElementById("labelGrid");
-  grid.innerHTML = "";
+  grid.innerHTML = '<div style="text-align:center;width:100%;padding:20px;">Generating labels...</div>';
 
-  // Generate QR codes in a temporary off-screen container
-  const tempContainer = document.createElement("div");
-  tempContainer.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0;";
-  document.body.appendChild(tempContainer);
-
+  const labelsData = [];
   for (const student of uniqueStudents) {
-    const qrDiv = document.createElement("div");
-    tempContainer.appendChild(qrDiv);
-    new QRCode(qrDiv, { text: student.id, width: 256, height: 256 });
+    const dataUrl = await generateQrImage(student.id);
+    labelsData.push({ student, dataUrl });
   }
 
-  // Wait for all QR codes to render (Increased delay for reliability)
-  await new Promise(resolve => setTimeout(resolve, 800));
+  grid.innerHTML = "";
+  // QR 4cm -> max padding, QR 6cm -> min padding
+  const baseGap = qrSettings.size > 5 ? "0.1cm" : "0.3cm";
 
-  // Extract data URLs and build label grid
-  uniqueStudents.forEach((student, i) => {
-    const qrDiv = tempContainer.children[i];
-    const canvas = qrDiv.querySelector("canvas");
-    const dataUrl = canvas ? canvas.toDataURL() : "";
-
-    // Fix 1: Add Student Name & Truncate long names
-    const nameText = student.name.length > 25 ? student.name.substring(0, 22) + "..." : student.name;
-
+  labelsData.forEach(({ student, dataUrl }) => {
+    const cls = state.classes.find(c => c.id === student.classId);
     const label = document.createElement("div");
     label.className = "label";
+    
+    // Structure: Name (top), QR (center), Class/Roll (bottom)
     label.innerHTML = `
-      <div class="label-name">${nameText}</div>
-      <img class="qr-img" src="${dataUrl}" alt="QR ${student.name}" />
-      <div class="label-roll">Roll: ${student.rollNo}</div>
+      <div class="label-name">${student.name}</div>
+      <img class="qr-img" src="${dataUrl}" style="width:${qrSettings.size}cm; height:${qrSettings.size}cm;" />
+      <div class="label-roll" style="margin-top:${baseGap};">
+        Class: ${cls?.name || "N/A"} | Roll: ${student.rollNo}
+      </div>
     `;
     grid.appendChild(label);
   });
 
-  document.body.removeChild(tempContainer);
-
-  // Activate label print mode and print
   document.body.classList.add("print-labels");
   setTimeout(() => {
     window.print();

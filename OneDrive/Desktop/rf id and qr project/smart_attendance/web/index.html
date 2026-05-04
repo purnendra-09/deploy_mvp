@@ -385,6 +385,60 @@
     </article>
   </template>
 
+  <!-- ====== QR CONFIG MODAL ====== -->
+  <div id="qrConfigModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-head">
+        <h2>QR Label Configuration</h2>
+        <button class="close-modal" id="closeConfigBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="config-section">
+          <h3>QR Code Size</h3>
+          <div class="size-options">
+            <label class="radio-tab">
+              <input type="radio" name="qrSize" value="4" />
+              <span>Small (4cm)</span>
+            </label>
+            <label class="radio-tab">
+              <input type="radio" name="qrSize" value="5" checked />
+              <span>Medium (5cm)</span>
+            </label>
+            <label class="radio-tab">
+              <input type="radio" name="qrSize" value="6" />
+              <span>Large (6cm)</span>
+            </label>
+          </div>
+          <p class="muted" style="margin-top: 10px; font-size: 13px;">
+            <strong>Note:</strong> Recommended size: 5 cm for best scanning performance.
+          </p>
+        </div>
+
+        <div class="config-section">
+          <h3>Print Contrast</h3>
+          <div class="select-wrap">
+            <select id="qrDarkness">
+              <option value="standard">Standard (Pure Black)</option>
+              <option value="extra">Extra Dark (Maximum Contrast)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="alert-info">
+          <i data-lucide="info" style="width:16px;height:16px;"></i>
+          Each label includes Student Name, QR Code, Class, and Roll Number.
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button id="cancelPrintBtn" class="button button--outline">Cancel</button>
+        <button id="confirmPrintBtn" class="button button--primary">
+          <i data-lucide="printer" style="width:16px;height:16px;"></i>
+          Print Labels
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>
